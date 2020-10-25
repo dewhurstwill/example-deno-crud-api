@@ -1,9 +1,12 @@
+/* TODO
+[] Add request validation using a package like yup or joi when they are supported
+
+*/
+
 // Third-Party Modules
 import 'https://deno.land/x/dotenv/load.ts';
 import { Application, Router } from 'https://deno.land/x/oak/mod.ts';
 import { MongoClient } from 'https://deno.land/x/mongo@v0.12.1/mod.ts';
-import * as yup from 'https://cdn.skypack.dev/yup';
-
 
 const client = new MongoClient();
 client.connectWithUri(`mongodb://${Deno.env.get('MONGO_DB_URI')}`);
@@ -19,18 +22,13 @@ interface DBCrudSchema {
   value: string;
 }
 
-const crudExampleSchema = yup.object().shape({
-  key: yup.string().trim().required(),
-  value: yup.string().trim().required(),
-});
-
 const db = client.database("crud-example");
 const crudExample = db.collection<DBCrudSchema>("crud-example");
 
 const router = new Router();
 
 router.get('/', async context => {
-  try { 
+  try {
     const items = await crudExample.find({});
     context.response.body = { 
       items: items 
@@ -65,8 +63,7 @@ router.get('/:id', async context => {
 
 router.post('/', async context => {
   try {
-    crudExampleSchema.validate(context.body)
-    const inserted = await crudExample.insertOne(context.body)
+    const inserted = await crudExample.insertOne(context.request.body)
     context.response.body = inserted;
   } catch (error) {
     console.error(error);
@@ -78,7 +75,6 @@ router.post('/', async context => {
 
 router.put('/:id', async context => {
   try {
-    crudExampleSchema.validate(context.body)
     const item = await crudExample.findOne({
       _id: context.params.id,
     });
@@ -92,7 +88,7 @@ router.put('/:id', async context => {
 
     const inserted = await crudExample.updateOne({
       _id: context.params.id
-    }, context.body);
+    }, context.request.body);
 
     context.response.body = inserted;
   } catch (error) {
